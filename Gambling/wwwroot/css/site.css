@@ -1,0 +1,249 @@
+@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+body {
+    font-family: sans-serif;
+    background-image: url('../images/pryo.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 100% 100%;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+.navbar {
+    padding-left: 16px;
+    padding-right: 16px;
+    border-bottom: 1px solid #dfe3e8;
+    border-radius: 0;
+}
+
+    .navbar img {
+        height: 100px;
+        width: 180px;
+    }
+
+    .navbar .navbar-brand {
+        padding-left: 0;
+        font-size: 20px;
+        padding-right: 50px;
+    }
+
+        .navbar .navbar-brand b {
+            color: goldenrod;
+        }
+
+    .navbar a {
+        font-size: 18px;
+    }
+
+
+    .navbar .dropdown-menu {
+        color: #fff;
+        font-weight: normal;
+        border-radius: 1px;
+        border-color: #e5e5e5;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+
+
+    .navbar .action-form {
+        width: 310px;
+        padding: 20px;
+        left: auto;
+        right: 0;
+        font-size: 14px;
+    }
+
+        .navbar .action-form a {
+            padding: 5px !important;
+            font-size: 18px;
+        }
+
+
+
+.form-check-label input {
+    position: relative;
+    top: 1px;
+}
+
+@media (min-width: 1200px) {
+    .form-inline .input-group {
+        width: 300px;
+        margin-left: 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar .dropdown-menu.action-form {
+        width: 100%;
+        padding: 10px 15px;
+        background: transparent;
+        border: none;
+    }
+
+    .navbar .form-inline {
+        display: block;
+    }
+
+    .navbar .input-group {
+        width: 100%;
+    }
+}
+
+.container {
+    border-radius: 0px;
+    padding: 0px;
+    color: black;
+}
+
+select {
+    margin: 10px;
+}
+
+card-register, card-login {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1rem 0 rgba(0, 0, 0, 0.1);
+}
+
+.card-register .card-title, .card-login .card-title {
+    margin-bottom: 2rem;
+    font-weight: 300;
+    font-size: 1.5rem;
+}
+
+.card-register .card-body, .card-login .card-body {
+    padding: 2rem;
+}
+
+.form-register, .form-login {
+    width: 100%;
+}
+
+
+.btn-outline-success {
+    font-size: 90%;
+    border-radius: 2rem;
+    font-weight: bold;
+    padding: 1rem;
+    transition: all 0.5s;
+    margin: 1rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.btn-outline-danger {
+    font-size: 90%;
+    border-radius: 2rem;
+    font-weight: bold;
+    transition: all 0.5s;
+    width: 120px;
+}
+
+.btn-warning, .btn-primary {
+    border-radius: 1rem;
+}
+
+.btn-outline-dark {
+    font-size: 90%;
+    border-radius: 2rem;
+    font-weight: bold;
+    transition: all 0.5s;
+}
+
+.form-label-group {
+    position: relative;
+    margin-bottom: 1rem;
+    margin-right: 1.5rem;
+}
+
+    .form-label-group input, .form-label-group select, .form-label-group InputTextArea {
+        height: auto;
+        padding: 1rem;
+        border-radius: 2rem;
+        margin: 1rem;
+    }
+
+
+.pro-img-details {
+    margin-left: -15px;
+}
+
+
+    .pro-img-details img {
+        width: 100%;
+    }
+
+
+.product-list img {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    -webkit-border-radius: 4px 4px 0 0;
+}
+
+.product_meta {
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+    margin: 15px 0;
+}
+
+    .product_meta span {
+        display: block;
+        margin-bottom: 10px;
+    }
+
+
+
+.quantity {
+    width: 80px;
+}
+
+.card-body .col-md-6 {
+    float: left;
+}
+
+@media only screen and (max-width:990px) {
+    .product-grid {
+        margin-bottom: 30px
+    }
+}
+
+input[type=file] {
+}
+
+.cartTable {
+    border-collapse: collapse;
+    border-radius: 10px;
+    background-color:lightgray;
+    overflow: hidden;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    margin-top: 10px;
+}
+
+
+.cartThead tr {
+    background-color: dimgrey;
+    color: #ffffff;
+    text-align: left;
+}

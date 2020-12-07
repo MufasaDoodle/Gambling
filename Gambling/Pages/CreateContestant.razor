@@ -1,0 +1,15 @@
+﻿@page "/create"
+@using Gambling.Data
+@using Gambling.Models
+
+<h3>CreateContestant</h3>
+
+
+@code {
+    Contestant contestant;
+
+    protected override async Task OnInitializedAsync()
+    {
+        contestant = new Contestant();
+    }
+}

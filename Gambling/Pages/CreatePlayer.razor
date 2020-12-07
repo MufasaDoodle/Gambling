@@ -1,0 +1,45 @@
+﻿@page "/createplayer"
+@using Gambling.Data
+@using Gambling.Models
+@inject IPlayerService PlayerService
+@inject NavigationManager NavigationManager 
+
+<h3>Create Player</h3>
+
+<EditForm Model="@player" OnValidSubmit="@AddNewPlayer">
+    <DataAnnotationsValidator></DataAnnotationsValidator>
+    <ValidationSummary></ValidationSummary>
+    <div class="form-group">
+        Name: <br />
+        <InputTextArea rows="1" @bind-Value="player.Name"></InputTextArea>
+    </div>
+    <div class="form-group">
+        Starting coins: <br />
+        <InputNumber rows="1" @bind-Value="player.Coins"></InputNumber>
+    </div>
+
+    <p class="actions">
+        <button class="btn btn-outline-dark" type="submit">Create</button>
+    </p>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-success">
+            @message
+        </div>
+    }
+</EditForm>
+
+
+@code {
+    Player player = new Player();
+    string message = String.Empty;
+
+    private async Task AddNewPlayer()
+    {
+        await PlayerService.AddPlayer(player);
+        message = "Player Added";
+        StateHasChanged();
+        NavigationManager.NavigateTo("/");
+    }
+}

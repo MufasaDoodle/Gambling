@@ -1,0 +1,72 @@
+﻿@page "/player"
+@using Gambling.Data
+@using Gambling.Models
+@inject IPlayerService PlayerService
+@inject NavigationManager NavigationManager 
+
+<h3>PlayerView</h3>
+
+<EditForm Model="@player" OnValidSubmit="@PatchPlayer">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="container-fluid" style="background:rgba(106, 108, 108, 0.5)">
+        <div class="row">
+            <div class="col-md-9 mx-auto">
+                <h5 class="card-title text-center">Employee Information</h5>
+                <form>
+                    <div class="form-label-group">
+                        <label>Name: </label> <br />
+                        <textarea class="form-control" placeholder="Name" rows="1" style="resize:none;">@player.Name</textarea>
+
+                        <label>Times Played: </label> <br />
+                        <InputNumber class="form-control" rows="1" style="resize:none;" @bind-Value="player.TimesPlayed"></InputNumber>
+
+                        <label>Times Won: </label> <br />
+                        <InputNumber class="form-control" rows="1" style="resize:none;" @bind-Value="player.TimesWon"></InputNumber>
+
+                        <label>Times Lost: </label> <br />
+                        <InputNumber class="form-control" rows="1" style="resize:none;" @bind-Value="player.TimesLost"></InputNumber>
+
+                        <label>Mufasa Coins: </label> <br />
+                        <InputNumber class="form-control" rows="1" style="resize:none;" @bind-Value="player.Coins"></InputNumber>
+
+                        <label>Times Drank: </label> <br />
+                        <InputNumber class="form-control" rows="1" style="resize:none;" @bind-Value="player.TimesDrank"></InputNumber>
+                    </div>
+                </form>
+                <button class="btn btn-success btn-block text-uppercase" type="submit" style="margin-left: .5rem;">Update</button>
+                <button class="btn btn-danger btn-block text-uppercase" type="button" style="margin-left: .5rem;" @onclick="DeletePlayer">Delete</button>
+
+                @if (!string.IsNullOrWhiteSpace(message))
+                {
+                    <div class="alert alert-success">
+                        @message
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    Player player = new Player();
+    string message = String.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        player = await PlayerService.GetPlayer(PlayerService.GetViewPlayer());
+    }
+
+    private async Task PatchPlayer()
+    {
+        await PlayerService.UpdatePlayer(player);
+        message = "Player updated";
+        StateHasChanged();
+    }
+
+    private async Task DeletePlayer()
+    {
+        await PlayerService.RemovePlayer(player.Id);
+        NavigationManager.NavigateTo("/players");
+    }
+}

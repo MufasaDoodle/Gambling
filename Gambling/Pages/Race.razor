@@ -1,0 +1,466 @@
+﻿@page "/race"
+@using Gambling.Data;
+@using Gambling.Models;
+@inject IJavascriptService JavascriptService
+@inject IPlayerService PlayerService
+
+<h3>Race</h3>
+
+<audio autoplay loop>
+    <source src="../audio/kahoot.mp3" type="audio/mpeg">
+</audio>
+
+<div class="container-fluid" style="background:rgba(106, 108, 108, 0.5)">
+    <div class="row">
+        @if (!hasStarted && !foundWinner)
+        {
+            <button class="btn btn-primary" @onclick="StartRace">Start race</button>
+        }
+        @if (foundWinner)
+        {
+            <button class="btn btn-primary" @onclick="Reset">Reset</button>
+        }
+    </div>
+
+    <div class="row">
+        <p>Speed: </p>
+        <input type="number" @bind="extraOffset" />
+    </div>
+
+    <div class="col-xl-12 border border-dark rounded">
+        @foreach (var contestant in contestants)
+        {
+            <div class="row">
+                <img src="@contestant.Picture" style="position:relative; left:@(contestant.Offset)px;" width="100px" height="100px" />
+            </div>
+        }
+    </div>
+
+    <div class="row">
+        <div class="col-xl-2">
+            @if (hasStarted)
+            {
+                for (int i = 0; i < contestantsOrdered.Count; i++)
+                {
+                    <h5>@(i+1): @contestantsOrdered[i].Name</h5>
+                }
+            }
+            @if (foundWinner)
+            {
+                <h3>Winner is: @Leader!</h3>
+                for (int i = 1; i < contestantsOrdered.Count; i++)
+                {
+                    <h5>@(i+1): @contestantsOrdered[i].Name</h5>
+                }
+            }
+        </div>
+
+        <div class="col-xl-2">
+            <p>Players</p>
+            <div class="form-group">
+                <select @bind="@playerToAdd">
+                    <option selected>Select a player...</option>
+                    @foreach (var player in listToShow)
+                    {
+                        <option>@player.Name</option>
+                    }
+                </select>
+                <button class="btn btn-success" @onclick="@AddPlayerToList">Add</button>
+            </div>
+            <div class="form-group">
+                @foreach (var player in playingPlayers)
+                {
+                    <label>
+                        @(player.Name)     <button @onclick="@(() => RemovePlayingPlayer(player))">
+                            <i class="oi oi-trash" style="color:red"></i>
+                        </button>
+                    </label>
+                    <br />
+                }
+            </div>
+        </div>
+
+        <div class="col-xl-2">
+            <EditForm Model="@betToAdd" OnValidSubmit="@AddBet">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <ValidationSummary></ValidationSummary>
+                <div class="form-group">
+                    <select @bind="@betToAdd.PlayerName">
+                        <option selected>Select a player...</option>
+                        @foreach (var player in playingPlayers)
+                        {
+                            <option>@player.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <InputSelect @bind-Value="betToAdd.ContestantName">
+                        <option selected>Contestant...</option>
+                        @foreach (var contestant in contestants)
+                        {
+                            <option>@contestant.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="form-group">
+                    <InputNumber PlaceHolder="Amount" rows="1" @bind-Value="betToAdd.Amount" style="resize:none;"></InputNumber>
+                </div>
+
+                <p class="actions">
+                    <button class="btn btn-success" type="submit">Create</button>
+                </p>
+            </EditForm>
+        </div>
+
+        <div class="col-xl-3">
+            @foreach (var bet in bets)
+            {
+                <div class="border-left border-bottom border-right border-dark" style="background:rgba(106, 108, 108, 0.6)">
+                    <p>@(bet.PlayerName) has bet @(bet.Amount) drinks on @(bet.ContestantName)</p>
+                </div>
+            }
+        </div>
+
+        <div class="col-xl-3 border-dark">
+            @if (foundWinner)
+            {
+                if (!resultDetermined)
+                {
+                    Task.Run(async () => await DetermineResult());
+                    resultDetermined = true;
+                }
+                @foreach (var bet in bets)
+                {
+                    //if player is the winner
+                    if (bet.ContestantName.Equals(Leader))
+                    {
+                        <div class="border-left border-bottom border-right border-dark" style="background:rgba(106, 108, 108, 0.6)">
+                            <p>@(bet.PlayerName) can give out @(bet.Amount*2) drinks!</p>
+                        </div>
+                    }
+                    else
+                    {
+                        int plusDrink = 0;
+
+                        for (int i = 0; i < contestantsOrdered.Count; i++)
+                        {
+                            if (bet.ContestantName.Equals(contestantsOrdered[i].Name))
+                            {
+                                plusDrink = i;
+                            }
+                        }
+
+                        int totalDrinks = bet.Amount + plusDrink;
+
+                        <div class="border-left border-bottom border-right border-dark" style="background:rgba(106, 108, 108, 0.6)">
+                            <p>@(bet.PlayerName) has to drink @(totalDrinks) drinks!</p>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    List<Contestant> contestants;
+    List<Contestant> contestantsOrdered;
+
+    IList<Player> allPlayers;
+    List<Player> listToShow;
+    List<Player> playingPlayers;
+
+    string playerToAdd = string.Empty;
+
+    List<Bet> bets;
+
+    Bet betToAdd = new Bet();
+
+    Random random = new Random();
+    int extraOffset = 4;
+
+    public int Width { get; set; }
+    public int Height { get; set; }
+
+    int maxOffset = 1200;
+
+    string Leader { get; set; }
+
+    bool hasStarted = false;
+    bool foundWinner = false;
+
+    bool resultDetermined = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        contestants = new List<Contestant>()
+{
+            new Contestant()
+            {
+                Name = "Car",
+                Picture = "../images/car.jpg",
+                Offset = 0
+            },
+            new Contestant()
+            {
+                Name = "Morgan",
+                Picture = "../images/morgan.jpg",
+                Offset = 0
+            },
+            new Contestant()
+            {
+                Name = "Old Guy",
+                Picture = "../images/oldman.jpg",
+                Offset = 0
+            },
+            new Contestant()
+            {
+                Name = "Stroller",
+                Picture = "../images/stroller.jpg",
+                Offset = 0
+            },
+            new Contestant()
+            {
+                Name = "Truck",
+                Picture = "../images/truck.png",
+                Offset = 0
+            },
+            new Contestant()
+            {
+                Name = "Dino",
+                Picture = "../images/dino.jpg",
+                Offset = 0
+            }
+        };
+        bets = new List<Bet>();
+        allPlayers = await PlayerService.GetAllPlayers();
+        listToShow = allPlayers.ToList();
+        playingPlayers = new List<Player>();
+
+        //using javascript to get the maximum offset, so that it will work on all window sizes
+        var dimensions = await JavascriptService.GetWindowDimensions();
+        Width = dimensions.Width;
+        Height = dimensions.Height;
+
+        maxOffset = Width - 175;
+    }
+
+    private void Reset()
+    {
+        //set starting conditions
+        hasStarted = false;
+        foundWinner = false;
+        resultDetermined = false;
+
+        bets.Clear();
+
+        //reset position
+        foreach (var contestant in contestants)
+        {
+            contestant.Offset = 0;
+        }
+
+        StateHasChanged();
+    }
+
+    private void RemovePlayingPlayer(Player player)
+    {
+        playingPlayers.Remove(player);
+        listToShow.Add(player);
+        StateHasChanged();
+    }
+
+    private void AddPlayerToList()
+    {
+        playingPlayers.Add(allPlayers.First(player => player.Name.Equals(playerToAdd)));
+        listToShow.Remove(allPlayers.First(player => player.Name.Equals(playerToAdd)));
+        StateHasChanged();
+    }
+
+    private void AddBet()
+    {
+        Bet toAdd = new Bet
+        {
+            ContestantName = betToAdd.ContestantName,
+            PlayerName = betToAdd.PlayerName,
+            Amount = betToAdd.Amount
+        };
+        bets.Add(toAdd);
+
+        betToAdd = new Bet();
+        StateHasChanged();
+    }
+
+    private async Task StartRace()
+    {
+        //set starting conditions
+        hasStarted = true;
+        foundWinner = false;
+
+        //race loop
+        while (CheckWinCondition())
+        {
+            await RandomizeOffset();
+        }
+
+        //set ending conditions
+        hasStarted = false;
+        foundWinner = true;
+        StateHasChanged();
+    }
+
+    private bool CheckWinCondition()
+    {
+        return contestants[0].Offset < maxOffset &&
+            contestants[1].Offset < maxOffset &&
+            contestants[2].Offset < maxOffset &&
+            contestants[3].Offset < maxOffset &&
+            contestants[4].Offset < maxOffset;
+    }
+
+    private async Task RandomizeOffset()
+    {
+        //change extra offset for a larger potential movement speed
+        int maxRandom = random.Next(5) + extraOffset;
+
+        foreach (var contestant in contestants)
+        {
+            contestant.Offset += random.Next(maxRandom);
+
+            //checkk if someone is past the max position
+            if (contestant.Offset > maxOffset)
+            {
+                contestant.Offset = maxOffset;
+            }
+        }
+
+        SortList();
+        StateHasChanged();
+        CheckLeader();
+
+        //change delay for faster or slower movement
+        await Task.Delay(1);
+    }
+
+    private void CheckLeader()
+    {
+        //sorting who's in the furthest position
+        int highest = 0;
+
+        for (int i = 1; i < contestants.Count; i++)
+        {
+            if (contestants[i].Offset > contestants[highest].Offset)
+            {
+                highest = i;
+            }
+        }
+
+        Leader = contestants[highest].Name;
+        StateHasChanged();
+    }
+
+    private void SortList()
+    {
+        contestantsOrdered = SortByDistance(contestants);
+    }
+
+    private List<Contestant> SortByDistance(List<Contestant> toSort)
+    {
+        var result = from contestant in toSort
+                     orderby contestant.Offset
+                     select contestant;
+
+        var list = result.ToList<Contestant>();
+        list.Reverse();
+
+        return list;
+    }
+
+    private async Task DetermineResult()
+    {
+        Console.WriteLine("Determining result...");
+        @foreach (var bet in bets)
+        {
+            if (bet.ContestantName.Equals(Leader))
+            {
+                Player toEdit = playingPlayers.Find(player => player.Name.Equals(bet.PlayerName));
+                toEdit.TimesPlayed++;
+                toEdit.TimesWon++;
+                toEdit.Coins += 10 + (bet.Amount * 2);
+                toEdit.betAmounts.Add(bet.Amount);
+
+                IList<ContestantVotes> contestantVotes = await PlayerService.GetContestantVotesByPlayerID(toEdit.Id);
+                var vote = contestantVotes.FirstOrDefault(temp => temp.ContestantName.Equals(bet.ContestantName));
+
+                if (vote != null)
+                {
+                    vote.Amount++;
+                    Console.WriteLine("Updating contest votew");
+                    await PlayerService.UpdateContestantVotes(vote);
+                }
+                else
+                {
+                    ContestantVotes toAdd = new ContestantVotes
+                    {
+                        ContestantName = bet.ContestantName,
+                        PlayerID = toEdit.Id,
+                        Amount = 1
+                    };
+                    Console.WriteLine("adding const vote3");
+                    await PlayerService.AddContestantVotes(toAdd);
+                }
+            }
+            else
+            {
+                int plusDrink = 0;
+
+                for (int i = 0; i < contestantsOrdered.Count; i++)
+                {
+                    if (bet.ContestantName.Equals(contestantsOrdered[i].Name))
+                    {
+                        plusDrink = i;
+                    }
+                }
+
+                int totalDrinks = bet.Amount + plusDrink;
+
+                Player toEdit = playingPlayers.Find(player => player.Name.Equals(bet.PlayerName));
+                toEdit.TimesPlayed++;
+                toEdit.TimesLost++;
+                toEdit.TimesDrank += totalDrinks;
+                toEdit.betAmounts.Add(bet.Amount);
+
+                IList<ContestantVotes> contestantVotes = await PlayerService.GetContestantVotesByPlayerID(toEdit.Id);
+                var vote = contestantVotes.FirstOrDefault(temp => temp.ContestantName.Equals(bet.ContestantName));
+
+                if (vote != null)
+                {
+                    vote.Amount++;
+                    Console.WriteLine("Updating contest votew");
+                    await PlayerService.UpdateContestantVotes(vote);
+                }
+                else
+                {
+                    ContestantVotes toAdd = new ContestantVotes
+                    {
+                        ContestantName = bet.ContestantName,
+                        PlayerID = toEdit.Id,
+                        Amount = 1
+                    };
+                    Console.WriteLine("adding const vote3");
+                    await PlayerService.AddContestantVotes(toAdd);
+                }
+            }
+        }
+        await UpdatePlayersStatsAsync();
+    }
+
+    private async Task UpdatePlayersStatsAsync()
+    {
+        foreach (var player in playingPlayers)
+        {
+            await PlayerService.UpdatePlayer(player);
+        }
+    }
+}

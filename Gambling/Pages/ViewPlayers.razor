@@ -1,0 +1,102 @@
+﻿@page "/players"
+@using Gambling.Models
+@using Gambling.Data
+@inject IPlayerService PlayerService
+@inject NavigationManager NavigationManager 
+
+<h3>ViewPlayers</h3>
+
+
+<div class="container-fluid">
+    <table class="table cartTable">
+        <thead class="cartThead">
+            <tr>
+                <th>Name</th>
+                <th>Times Played</th>
+                <th>Times Lost</th>
+                <th>Times Won</th>
+                <th>Mufasa Coins</th>
+                <th>Times Drank</th>
+                <th>Win Rate</th>
+                <th>Loss rate</th>
+                <th>Average bet</th>
+                <th>Favorite Racer</th>
+                <th>Profile</th>
+            </tr>
+        </thead>
+        <tbody class="cartTbody">
+            @foreach (var player in playersToShow)
+            {
+            <tr>
+                <td>@player.Name</td>
+                <td>@player.TimesPlayed</td>
+                <td>@player.TimesLost</td>
+                <td>@player.TimesWon</td>
+                <td>@player.Coins</td>
+                <td>@player.TimesDrank</td>
+                <td>@(((double)player.TimesWon / (double)player.TimesPlayed)*100)%</td>
+                <td>@(((double)player.TimesLost / (double)player.TimesPlayed)*100)%</td>
+                @if (player.betAmounts.Count > 0)
+                {
+                    <td>@(player.betAmounts.Average())</td>
+                }
+                else
+                {
+                    <td>0</td>
+                }
+                <td>@favorites[player.Id]</td>
+                <td>
+                    <button @onclick="@(() => OpenPlayer(player))">
+                        <i class="oi oi-account-login" style="color:green" />
+                    </button>
+                </td>
+            </tr>                
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    IList<Player> allPlayers;
+    List<Player> playersToShow;
+    Dictionary<int, string> favorites;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allPlayers = await PlayerService.GetAllPlayers();
+        playersToShow = allPlayers.ToList();
+        favorites = new Dictionary<int, string>();
+
+        foreach (var player in playersToShow)
+        {
+            string toAdd = await GetFavoriteRacer(player.Id);
+            favorites.Add(player.Id, toAdd);
+        }
+    }
+
+    private void OpenPlayer(Player player)
+    {
+        PlayerService.SetViewPlayer(player.Id);
+        NavigationManager.NavigateTo("/player");
+    }
+
+    private async Task<string> GetFavoriteRacer(int id)
+    {
+        IList<ContestantVotes> contestantVotes = await PlayerService.GetContestantVotesByPlayerID(id);
+        var result = from contenstantVote in contestantVotes
+                     orderby contenstantVote.Amount
+                     select contenstantVote.ContestantName;
+
+        var list = result.ToList<string>();
+        list.Reverse();
+
+        if(list.Count != 0)
+        {
+            return list[0];
+        }
+        else
+        {
+            return "No favorite";
+        }
+    }
+}
